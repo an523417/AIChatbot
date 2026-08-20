@@ -1,0 +1,2386 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 情緒角色對話機器人</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      --page-bg: #fffaf2;
+      --soft-bg: #fff5e4;
+      --accent: #b9814e;
+      --accent-dark: #8a5f31;
+      --user-bubble: #d9b98f;
+      --user-border: #d3ad7b;
+      --bot-bubble: #fff2df;
+      --bot-border: #ecd1af;
+      --chat-bg: #fffdf8;
+      --chat-glow: rgba(255, 232, 194, 0.30);
+      --sidebar-bg: #f8ead8;
+      --sidebar-border: #ead7bd;
+      --typing-dot: #b9814e;
+      margin: 0;
+      font-family: "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+      background: var(--page-bg);
+      color: #3f3026;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    body.theme-spring {
+      --page-bg: #f5fff4;
+      --soft-bg: #e8f7e5;
+      --accent: #78ad72;
+      --accent-dark: #4f7d4a;
+      --user-bubble: #9cca96;
+      --user-border: #82b87c;
+      --bot-bubble: #effbea;
+      --bot-border: #b8d8b2;
+      --chat-bg: #f1fbef;
+      --chat-glow: rgba(137, 192, 128, 0.30);
+      --sidebar-bg: #d3eacb;
+      --sidebar-border: #adcfa5;
+      --typing-dot: #3f7f3d;
+    }
+
+    body.theme-summer {
+      --page-bg: #f3fbff;
+      --soft-bg: #dff3ff;
+      --accent: #6aa6c8;
+      --accent-dark: #3e7595;
+      --user-bubble: #a39c0e;
+      --user-border: #70a9c5;
+      --bot-bubble: #fffaba;
+      --bot-border: #afd6e8;
+      --chat-bg: #edf9ff;
+      --chat-glow: rgba(115, 184, 218, 0.34);
+      --sidebar-bg: #ffffbe;
+      --sidebar-border: #9fc9dc;
+      --typing-dot: #e4b83f;
+    }
+
+    body.theme-autumn {
+      --page-bg: #6f3f24;
+      --soft-bg: #b8794d;
+      --accent: #d08a4f;
+      --accent-dark: #f3d2b8;
+      --user-bubble: #a9653b;
+      --user-border: #c98450;
+      --bot-bubble: #8b512f;
+      --bot-border: #c48255;
+      --chat-bg: #6b3c22;
+      --chat-glow: rgba(222, 142, 79, 0.22);
+      --sidebar-bg: #b8845d;
+      --sidebar-border: #d0a178;
+      --typing-dot: #f1b36d;
+    }
+
+    body.theme-winter {
+      --page-bg: #d3dade;
+      --soft-bg: #edf3f6;
+      --accent: #0a2435;
+      --accent-dark: #314c5d;
+      --user-bubble: #7698ad;
+      --user-border: #5f8196;
+      --bot-bubble: #15303f;
+      --bot-border: #afc4d0;
+      --chat-bg: #04161e;
+      --chat-glow: rgba(73, 104, 123, 0.24);
+      --sidebar-bg: #0f3649;
+      --sidebar-border: #bfccd4;
+      --typing-dot: #f7fbff;
+    }
+
+    .app {
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 288px 1fr;
+      background: var(--page-bg);
+    }
+
+    .sidebar {
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--sidebar-border);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .sidebar-header {
+      padding: 20px 18px 14px;
+      border-bottom: 1px solid var(--sidebar-border);
+      flex-shrink: 0;
+    }
+
+    .sidebar-header h1 {
+      margin: 0 0 8px;
+      font-size: 22px;
+      letter-spacing: 1px;
+    }
+
+    .sidebar-header p {
+      margin: 0;
+      color: #8a715b;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .new-chat-btn {
+      width: 100%;
+      margin-top: 16px;
+      border: 1px solid var(--sidebar-border);
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--sidebar-bg) 45%, #ffffff);
+      color: #7a5b3f;
+      padding: 12px 14px;
+      font-weight: bold;
+      cursor: pointer;
+      text-align: left;
+      font-family: inherit;
+    }
+
+    .sidebar-content {
+      padding: 16px 12px;
+      overflow-y: auto;
+      min-height: 0;
+      flex: 1;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: bold;
+      color: #7a5b3f;
+      margin: 4px 6px 12px;
+    }
+
+    .character-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .character-card {
+      border: 1px solid transparent;
+      background: transparent;
+      border-radius: 14px;
+      padding: 12px;
+      cursor: pointer;
+      transition: 0.18s ease;
+    }
+
+    .character-card:hover,
+    .character-card.active {
+      background: var(--soft-bg);
+      border-color: var(--bot-border);
+    }
+
+    .character-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #f0d9bd;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 1px solid #ead1b2;
+    }
+
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .character-card h3 {
+      margin: 0;
+      font-size: 15px;
+      color: #4b3b2f;
+    }
+
+    .season {
+      margin-top: 3px;
+      font-size: 12px;
+      color: #9b7a5b;
+    }
+
+    .character-card p {
+      margin: 8px 0 0;
+      color: #735f4e;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .sidebar-footer {
+      padding: 14px 18px;
+      border-top: 1px solid var(--sidebar-border);
+      color: #8a715b;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    .settings-btn {
+      width: 100%;
+      margin-top: 10px;
+      border: 1px solid var(--sidebar-border);
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--sidebar-bg) 45%, #ffffff);
+      color: #7a5b3f;
+      padding: 11px 12px;
+      font-family: inherit;
+      font-weight: bold;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .settings-modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+      background: rgba(64, 45, 30, 0.28);
+      backdrop-filter: blur(8px);
+      z-index: 50;
+    }
+
+    .settings-modal.open {
+      display: flex;
+    }
+
+    .settings-card {
+      width: min(460px, 100%);
+      background: #fffdf8;
+      border: 1px solid #ead7bd;
+      border-radius: 28px;
+      box-shadow: 0 22px 56px rgba(64, 45, 30, 0.22);
+      padding: 28px;
+    }
+
+    .settings-card h2 {
+      margin: 0 0 8px;
+      color: #3f3026;
+      font-size: 25px;
+    }
+
+    .settings-card p {
+      margin: 0 0 20px;
+      color: #8a715b;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .settings-avatar-preview {
+      width: 92px;
+      height: 92px;
+      border-radius: 50%;
+      margin: 0 auto 12px;
+      background: #d9b98f;
+      color: #fffdf9;
+      display: grid;
+      place-items: center;
+      font-size: 32px;
+      font-weight: bold;
+      overflow: hidden;
+      border: 3px solid #ead1b2;
+      box-shadow: 0 10px 22px rgba(116, 82, 45, 0.12);
+    }
+
+    .settings-avatar-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .settings-avatar-btn {
+      display: block;
+      margin: 0 auto 20px;
+      border: 1px solid #ead1b2;
+      border-radius: 999px;
+      background: #fff2df;
+      color: #8a5f31;
+      padding: 9px 16px;
+      font-family: inherit;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .settings-field {
+      margin-bottom: 16px;
+    }
+
+    .settings-field label {
+      display: block;
+      margin-bottom: 8px;
+      color: #7a5b3f;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .settings-field input {
+      width: 100%;
+      border: 1px solid #e4c9a6;
+      border-radius: 16px;
+      background: #fffaf2;
+      color: #4b3b2f;
+      outline: none;
+      font-size: 15px;
+      padding: 13px 15px;
+      font-family: inherit;
+    }
+
+    .settings-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .settings-save-btn,
+    .settings-cancel-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 13px;
+      font-family: inherit;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .settings-save-btn {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .settings-cancel-btn {
+      background: #fff2df;
+      color: #8a5f31;
+      border: 1px solid #ead1b2;
+    }
+
+    body.theme-winter .sidebar-header h1,
+    body.theme-winter .section-title,
+    body.theme-winter .character-card h3,
+    body.theme-winter .mood-panel-title {
+      color: #f7fbff;
+    }
+
+    body.theme-winter .sidebar-header p,
+    body.theme-winter .season,
+    body.theme-winter .character-card p,
+    body.theme-winter .sidebar-footer,
+    body.theme-winter .mood-summary,
+    body.theme-winter .mood-main-label,
+    body.theme-winter .mood-item {
+      color: #dce8ef;
+    }
+
+    body.theme-winter .new-chat-btn,
+    body.theme-winter .settings-btn {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.28);
+      color: #f7fbff;
+    }
+
+    body.theme-winter .character-card:hover,
+    body.theme-winter .character-card.active,
+    body.theme-winter .mood-panel {
+      background: rgba(255, 255, 255, 0.13);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    body.theme-winter .mood-main {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.24);
+    }
+
+    body.theme-winter .mood-main-value {
+      color: #ffffff;
+    }
+
+    body.theme-winter .mood-bar {
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    body.theme-winter .sidebar-header,
+    body.theme-winter .sidebar-footer {
+      border-color: rgba(255, 255, 255, 0.22);
+    }
+
+    body.theme-winter .mood-summary {
+      border-top-color: rgba(255, 255, 255, 0.24);
+    }
+
+    body.theme-winter .mood-reset-btn {
+      color: #f7fbff;
+    }
+
+    body.theme-autumn .speaker-name,
+    body.theme-autumn .sidebar-header h1,
+    body.theme-autumn .section-title,
+    body.theme-autumn .character-card h3,
+    body.theme-autumn .mood-panel-title {
+      color: #fff7ef;
+    }
+
+    body.theme-autumn .sidebar-header p,
+    body.theme-autumn .season,
+    body.theme-autumn .character-card p,
+    body.theme-autumn .sidebar-footer,
+    body.theme-autumn .mood-summary,
+    body.theme-autumn .mood-main-label,
+    body.theme-autumn .mood-item {
+      color: #f4dcc8;
+    }
+
+    body.theme-autumn .new-chat-btn,
+    body.theme-autumn .settings-btn {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.30);
+      color: #fff7ef;
+    }
+
+    body.theme-autumn .character-card:hover,
+    body.theme-autumn .character-card.active,
+    body.theme-autumn .mood-panel {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.26);
+    }
+
+    body.theme-autumn .mood-main {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    body.theme-autumn .mood-main-value {
+      color: #ffffff;
+    }
+
+    body.theme-autumn .mood-bar {
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    body.theme-autumn .sidebar-header,
+    body.theme-autumn .sidebar-footer {
+      border-color: rgba(255, 255, 255, 0.24);
+    }
+
+    body.theme-autumn .mood-summary {
+      border-top-color: rgba(255, 255, 255, 0.26);
+    }
+
+    body.theme-autumn .mood-reset-btn {
+      color: #fff7ef;
+    }
+
+    body.theme-autumn .bot,
+    body.theme-autumn .message {
+      color: #fff8f1;
+    }
+
+    body.theme-autumn .user {
+      color: #fffdf9;
+    }
+
+    body.theme-winter .speaker-name,
+    body.theme-winter .bot,
+    body.theme-winter .message {
+      color: #f7fbff;
+    }
+
+    body.theme-winter .user {
+      color: #fffdf9;
+    }
+
+    body.theme-autumn .chat-header h2,
+    body.theme-winter .chat-header h2 {
+      color: #3f3026;
+    }
+
+    body.theme-autumn .chat-header span,
+    body.theme-winter .chat-header span {
+      color: #8a715b;
+    }
+
+    .crisis-widget {
+      position: fixed;
+      right: 24px;
+      bottom: 102px;
+      z-index: 60;
+      display: none;
+      align-items: flex-end;
+      gap: 12px;
+    }
+
+    .crisis-widget.show {
+      display: flex;
+    }
+
+    .crisis-bubble {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      border: 1px solid #efb8a8;
+      background: #f3a996;
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+      box-shadow: 0 12px 26px rgba(173, 91, 70, 0.24);
+      cursor: pointer;
+      animation: crisisBounce 0.7s ease 2;
+    }
+
+    .crisis-card {
+      width: min(330px, calc(100vw - 108px));
+      border: 1px solid #efc2b8;
+      border-radius: 22px;
+      background: #fff7f4;
+      box-shadow: 0 16px 36px rgba(116, 82, 45, 0.18);
+      padding: 18px 18px 16px;
+      color: #5c3a32;
+      display: none;
+    }
+
+    .crisis-widget.open .crisis-card {
+      display: block;
+    }
+
+    .crisis-title {
+      margin: 0 0 8px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #9a4d3d;
+    }
+
+    .crisis-text {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.8;
+      white-space: pre-line;
+    }
+
+    .crisis-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 14px;
+    }
+
+    .crisis-close-btn {
+      border: none;
+      border-radius: 999px;
+      background: #c87962;
+      color: #fff;
+      padding: 9px 14px;
+      font-family: inherit;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    @keyframes crisisBounce {
+      0% {
+        transform: scale(0.92) translateY(0);
+      }
+      45% {
+        transform: scale(1.08) translateY(-8px);
+      }
+      100% {
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .mood-panel {
+      margin: 20px 0 4px;
+      padding: 14px;
+      border: 1px solid var(--bot-border);
+      border-radius: 18px;
+      background: color-mix(in srgb, var(--soft-bg) 52%, #ffffff);
+    }
+
+    .mood-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .mood-panel-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: #7a5b3f;
+    }
+
+    .mood-reset-btn {
+      border: none;
+      background: transparent;
+      color: var(--accent-dark);
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+      padding: 4px;
+    }
+
+    .mood-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .mood-main {
+      display: grid;
+      grid-template-columns: 54px 1fr;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+      padding: 12px;
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--bot-bubble) 76%, #ffffff);
+      border: 1px solid var(--bot-border);
+    }
+
+    .mood-main-emoji {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: color-mix(in srgb, var(--soft-bg) 55%, #ffffff);
+      font-size: 28px;
+      box-shadow: inset 0 0 0 1px #ead7bd;
+    }
+
+    .mood-main-label {
+      color: #8a715b;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .mood-main-value {
+      color: #4b3b2f;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .mood-distribution {
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      display: flex;
+      background: #f0dfc9;
+      margin: 12px 0 14px;
+    }
+
+    .mood-segment {
+      width: 0%;
+      height: 100%;
+      transition: width 0.25s ease;
+    }
+
+    .mood-item {
+      display: grid;
+      grid-template-columns: 64px 1fr 26px;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #735f4e;
+    }
+
+    .mood-bar {
+      height: 8px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--bot-border) 45%, #ffffff);
+      overflow: hidden;
+    }
+
+    .mood-bar-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--typing-dot);
+      transition: width 0.25s ease;
+    }
+
+    .mood-summary {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--bot-border);
+      color: #8a715b;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .mood-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      width: fit-content;
+      margin-top: 8px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: #fff2df;
+      border: 1px solid #ead1b2;
+      color: #8a5f31;
+      font-size: 12px;
+    }
+
+    .system-note-row {
+      align-self: center;
+      display: block;
+      max-width: 100%;
+      margin: -4px 0 0;
+    }
+
+    .system-note {
+      color: color-mix(in srgb, var(--accent-dark) 45%, #aaa09a);
+      font-size: 12px;
+      line-height: 1.5;
+      text-align: center;
+      background: transparent;
+      border: none;
+      padding: 0;
+    }
+
+    .chat-area {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      background:
+        radial-gradient(circle at top right, var(--chat-glow), transparent 30%),
+        var(--chat-bg);
+    }
+
+    .chat-header {
+      height: 66px;
+      padding: 0 28px;
+      border-bottom: 1px solid #f0dfc9;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(10px);
+      flex-shrink: 0;
+      z-index: 2;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .mobile-menu-btn {
+      display: none;
+      border: 1px solid #ead1b2;
+      background: #fff2df;
+      color: #7a5b3f;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      font-size: 22px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .current-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      overflow: hidden;
+      background: #f0d9bd;
+      border: 1px solid #ead1b2;
+      flex-shrink: 0;
+    }
+
+    .current-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .header-text {
+      min-width: 0;
+    }
+
+    .header-text h2 {
+      margin: 0 0 4px;
+      font-size: 18px;
+    }
+
+    .header-text span {
+      display: block;
+      max-width: 680px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #8a715b;
+      font-size: 13px;
+    }
+
+    .clear-btn {
+      border: 1px solid #ead1b2;
+      border-radius: 999px;
+      background: #fff2df;
+      color: #8a5f31;
+      padding: 9px 14px;
+      font-family: inherit;
+      font-weight: bold;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .messages {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 34px 24px 150px;
+      background:
+        radial-gradient(circle at top right, var(--chat-glow), transparent 28%),
+        radial-gradient(circle at bottom left, color-mix(in srgb, var(--bot-bubble) 70%, transparent), transparent 30%),
+        var(--chat-bg);
+    }
+
+    .message-list {
+      width: min(780px, 100%);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .message-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 16px;
+      max-width: 82%;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .bot-row {
+      align-self: flex-start;
+    }
+
+    .user-row {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .chat-avatar-wrap {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      overflow: hidden;
+      background: #f0d9bd;
+      border: 1px solid #ead1b2;
+      box-shadow: 0 4px 10px rgba(116, 82, 45, 0.10);
+      flex: 0 0 54px;
+    }
+
+    .chat-avatar {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .user-avatar {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: var(--user-bubble);
+      color: #fffdf9;
+      display: grid;
+      place-items: center;
+      font-weight: bold;
+      box-shadow: 0 4px 10px rgba(116, 82, 45, 0.10);
+      flex: 0 0 54px;
+      overflow: hidden;
+      font-size: 16px;
+    }
+
+    .user-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .bubble-wrap {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .speaker-name {
+      font-size: 13px;
+      font-weight: bold;
+      color: #7a5b3f;
+      margin: 0;
+      padding-left: 4px;
+    }
+
+    .user-row .speaker-name {
+      text-align: right;
+      padding-left: 0;
+      padding-right: 4px;
+    }
+
+    body.theme-winter .message-row .speaker-name {
+      color: #f7fbff;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    }
+
+    .message {
+      line-height: 1.85;
+      font-size: 16px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #4b3b2f;
+    }
+
+    .user {
+      background: var(--user-bubble);
+      color: #fffdf9;
+      border: 1px solid var(--user-border);
+      border-radius: 20px;
+      border-bottom-right-radius: 6px;
+      padding: 13px 17px;
+      width: fit-content;
+      max-width: min(620px, 100%);
+      box-shadow: 0 8px 20px rgba(116, 82, 45, 0.10);
+    }
+
+    .bot {
+      background: var(--bot-bubble);
+      border: 1px solid var(--bot-border);
+      border-radius: 20px;
+      border-bottom-left-radius: 6px;
+      padding: 13px 17px;
+      width: fit-content;
+      max-width: min(620px, 100%);
+      box-shadow: 0 8px 20px rgba(116, 82, 45, 0.08);
+    }
+
+    .message-image {
+      display: block;
+      max-width: min(360px, 70vw);
+      max-height: 320px;
+      border-radius: 18px;
+      border: 1px solid #ead1b2;
+      object-fit: cover;
+      box-shadow: 0 8px 18px rgba(116, 82, 45, 0.12);
+    }
+
+    .typing {
+      display: inline-flex;
+      gap: 5px;
+      align-items: center;
+      min-width: 58px;
+      padding-top: 8px;
+    }
+
+    .typing span {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--typing-dot) !important;
+      animation: bounce 1s infinite ease-in-out;
+    }
+
+    .typing span:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+
+    .typing span:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+
+    .input-shell {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 26px 24px 22px;
+      background: linear-gradient(to top, #fffdf8 72%, rgba(255, 253, 248, 0));
+      z-index: 3;
+    }
+
+    .input-area {
+      width: min(780px, 100%);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #ffffff;
+      border: 1px solid #ead7bd;
+      border-radius: 999px;
+      box-shadow: 0 12px 34px color-mix(in srgb, var(--accent) 18%, transparent);
+      padding: 10px 10px 10px 12px;
+    }
+
+    .plus-btn,
+    .send-btn {
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      flex-shrink: 0;
+    }
+
+    .plus-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--accent-dark);
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .input-area input[type="text"] {
+      flex: 1;
+      min-width: 0;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: #4b3b2f;
+      font-size: 15px;
+      padding: 10px 4px;
+    }
+
+    .send-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 18px;
+      display: grid;
+      place-items: center;
+    }
+
+    .drawer-backdrop {
+      display: none;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes bounce {
+      0%, 80%, 100% {
+        transform: translateY(0);
+        opacity: 0.45;
+      }
+      40% {
+        transform: translateY(-5px);
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 820px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: min(288px, 86vw);
+        z-index: 20;
+        transform: translateX(-105%);
+        transition: 0.22s ease;
+        box-shadow: 12px 0 30px rgba(116, 82, 45, 0.18);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .drawer-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(48, 35, 25, 0.28);
+        opacity: 0;
+        pointer-events: none;
+        transition: 0.2s ease;
+        z-index: 19;
+      }
+
+      .drawer-backdrop.open {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .mobile-menu-btn {
+        display: block;
+      }
+
+      .chat-header {
+        padding: 0 16px;
+      }
+
+      .header-text span {
+        max-width: 48vw;
+      }
+
+      .clear-btn {
+        display: none;
+      }
+
+      .messages {
+        padding: 24px 16px 140px;
+      }
+
+      .message-list {
+        gap: 22px;
+      }
+
+      .message {
+        font-size: 15px;
+      }
+
+      .input-shell {
+        padding: 22px 14px 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <div class="drawer-backdrop" id="drawerBackdrop"></div>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h1>AI 角色對話</h1>
+        <p>選擇不同季節角色，開始一段帶有情緒支持感的溫暖對話。</p>
+        <button class="new-chat-btn" id="newChatBtn" type="button">＋ 新對話 / 清除目前角色</button>
+      </div>
+
+      <div class="sidebar-content">
+        <div class="section-title">選擇聊天角色</div>
+
+        <div class="character-list">
+          <div class="character-card active"
+            data-name="春野 咲良"
+            data-season="春之櫻 -「對你微笑、溫暖、溫柔」"
+            data-icon="AIChatbot_IG/C1_sakura.jpeg"
+            data-chat-icon="AIChatbot_IG/C2_sakura.jpeg"
+            data-desc="溫柔、細膩，擅長陪伴與安慰。">
+            <div class="character-header">
+              <div class="avatar"><img src="AIChatbot_IG/C1_sakura.jpeg" alt="咲良"></div>
+              <div>
+                <h3>咲良</h3>
+                <div class="season">春｜溫柔陪伴型</div>
+              </div>
+            </div>
+            <p>適合心情低落、想被慢慢聽見的時候。</p>
+          </div>
+
+          <div class="character-card"
+            data-name="夏川 陽毬"
+            data-season="夏之葵 -「溫暖、希望與積極信念」"
+            data-icon="AIChatbot_IG/C1_himari.jpeg"
+            data-chat-icon="AIChatbot_IG/C2_himari.jpeg"
+            data-desc="開朗、有活力，會鼓勵你向前走。">
+            <div class="character-header">
+              <div class="avatar"><img src="AIChatbot_IG/C1_himari.jpeg" alt="陽毬"></div>
+              <div>
+                <h3>陽毬</h3>
+                <div class="season">夏｜活力鼓勵型</div>
+              </div>
+            </div>
+            <p>適合需要打氣、想恢復行動力的時候。</p>
+          </div>
+
+          <div class="character-card"
+            data-name="秋山 椛"
+            data-season="秋之楓 -「堅毅、美麗的變化、珍貴的回憶」"
+            data-icon="AIChatbot_IG/C1_momiji.jpeg"
+            data-chat-icon="AIChatbot_IG/C2_momiji.jpeg"
+            data-desc="直率、可靠，會用清楚的方式陪你整理思緒。">
+            <div class="character-header">
+              <div class="avatar"><img src="AIChatbot_IG/C1_momiji.jpeg" alt="椛"></div>
+              <div>
+                <h3>椛</h3>
+                <div class="season">秋｜直率整理型</div>
+              </div>
+            </div>
+            <p>適合腦袋混亂、想要有人幫忙分析的時候。</p>
+          </div>
+
+          <div class="character-card"
+            data-name="冬月 椿"
+            data-season="冬之椿 -「謙讓、謹慎、理想的愛」"
+            data-icon="AIChatbot_IG/C1_tsubaki.jpeg"
+            data-chat-icon="AIChatbot_IG/C2_tsubaki.jpeg"
+            data-desc="安靜、謹慎、小心翼翼，但會用自己的方式陪著你。">
+            <div class="character-header">
+              <div class="avatar"><img src="AIChatbot_IG/C1_tsubaki.jpeg" alt="椿"></div>
+              <div>
+                <h3>椿</h3>
+                <div class="season">冬｜安靜守候型</div>
+              </div>
+            </div>
+            <p>適合想安靜說話、不想被過度打擾的時候。</p>
+          </div>
+        </div>
+
+        <div class="mood-panel">
+          <div class="mood-panel-header">
+            <div class="mood-panel-title">今日心情紀錄</div>
+            <button class="mood-reset-btn" id="resetMoodBtn" type="button">重置</button>
+          </div>
+
+          <div class="mood-main">
+            <div class="mood-main-emoji" id="moodMainEmoji">☁️</div>
+            <div>
+              <div class="mood-main-label">今天心情狀態</div>
+              <div class="mood-main-value" id="moodMainValue">尚未紀錄</div>
+            </div>
+          </div>
+
+          <div class="mood-distribution" title="今日情緒分布">
+            <div class="mood-segment" id="moodSegmentAnxiety"></div>
+            <div class="mood-segment" id="moodSegmentSadness"></div>
+            <div class="mood-segment" id="moodSegmentAnger"></div>
+            <div class="mood-segment" id="moodSegmentNormal"></div>
+          </div>
+
+          <div class="mood-list">
+            <div class="mood-item">
+              <span>😟 焦慮</span>
+              <div class="mood-bar"><div class="mood-bar-fill" id="moodBarAnxiety"></div></div>
+              <strong id="moodCountAnxiety">0</strong>
+            </div>
+            <div class="mood-item">
+              <span>🌧 低落</span>
+              <div class="mood-bar"><div class="mood-bar-fill" id="moodBarSadness"></div></div>
+              <strong id="moodCountSadness">0</strong>
+            </div>
+            <div class="mood-item">
+              <span>🔥 生氣</span>
+              <div class="mood-bar"><div class="mood-bar-fill" id="moodBarAnger"></div></div>
+              <strong id="moodCountAnger">0</strong>
+            </div>
+            <div class="mood-item">
+              <span>😊 開心</span>
+              <div class="mood-bar"><div class="mood-bar-fill" id="moodBarNormal"></div></div>
+              <strong id="moodCountNormal">0</strong>
+            </div>
+          </div>
+
+          <div class="mood-summary" id="moodSummary">
+            今天還沒有紀錄，開始聊天後會自動統計。
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        本地保存聊天紀錄｜後端保存 AI 記憶
+        <button class="settings-btn" id="settingsBtn" type="button">⚙ 設定 / 個人帳戶</button>
+      </div>
+    </aside>
+
+    <section class="chat-area">
+      <header class="chat-header">
+        <div class="header-left">
+          <button class="mobile-menu-btn" id="mobileMenuBtn" type="button">☰</button>
+          <div class="current-avatar">
+            <img id="currentAvatar" src="AIChatbot_IG/C2_sakura.jpeg" alt="目前角色">
+          </div>
+          <div class="header-text">
+            <h2 id="chatName">春野 咲良</h2>
+            <span id="chatDesc">春之櫻 -「對你微笑、溫暖、溫柔」｜溫柔、細膩，擅長陪伴與安慰。</span>
+          </div>
+        </div>
+        <button class="clear-btn" id="clearChatBtn" type="button">清除對話</button>
+      </header>
+
+      <div class="messages" id="messages">
+        <div class="message-list" id="messageList"></div>
+      </div>
+
+      <div class="input-shell">
+        <form class="input-area" id="chatForm">
+          <button class="plus-btn" id="imageBtn" type="button">＋</button>
+          <input id="imageInput" type="file" accept="image/*" hidden>
+          <input id="userInput" type="text" placeholder="想說什麼都說出來吧!" autocomplete="off" />
+          <button class="send-btn" type="submit">➜</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <section class="settings-modal" id="settingsModal">
+    <div class="settings-card">
+      <h2>個人帳戶</h2>
+      <p>可以在這裡修改你的名字、大頭貼與生日，儲存後會立即套用到聊天中。</p>
+
+      <div class="settings-avatar-preview" id="settingsAvatarPreview">你</div>
+      <button class="settings-avatar-btn" id="settingsAvatarBtn" type="button">更換大頭貼</button>
+      <input id="settingsAvatarInput" type="file" accept="image/*" hidden>
+
+      <div class="settings-field">
+        <label for="settingsNameInput">名字</label>
+        <input id="settingsNameInput" type="text" maxlength="20" placeholder="輸入你的名字">
+      </div>
+
+      <div class="settings-field">
+        <label for="settingsBirthdayInput">生日</label>
+        <input id="settingsBirthdayInput" type="date">
+      </div>
+
+      <div class="settings-actions">
+        <button class="settings-cancel-btn" id="settingsCancelBtn" type="button">取消</button>
+        <button class="settings-save-btn" id="settingsSaveBtn" type="button">儲存設定</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="crisis-widget" id="crisisWidget">
+    <div class="crisis-card">
+      <div class="crisis-title">安全提醒</div>
+      <p class="crisis-text">已偵測到你的情緒有極度負面傾向。
+你不需要一個人撐著，有我們陪伴著你。
+讓我們為你提供協助，請撥打 1995 / 1925。</p>
+      <div class="crisis-actions">
+        <button class="crisis-close-btn" id="crisisCloseBtn" type="button">我知道了</button>
+      </div>
+    </div>
+    <button class="crisis-bubble" id="crisisBubble" type="button" aria-label="安全提醒">!</button>
+  </div>
+
+  <script>
+    const cards = document.querySelectorAll('.character-card');
+    const chatName = document.getElementById('chatName');
+    const chatDesc = document.getElementById('chatDesc');
+    const currentAvatar = document.getElementById('currentAvatar');
+    const messages = document.getElementById('messages');
+    const messageList = document.getElementById('messageList');
+    const chatForm = document.getElementById('chatForm');
+    const userInput = document.getElementById('userInput');
+    const sidebar = document.getElementById('sidebar');
+    const drawerBackdrop = document.getElementById('drawerBackdrop');
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const clearChatBtn = document.getElementById('clearChatBtn');
+    const newChatBtn = document.getElementById('newChatBtn');
+    const imageBtn = document.getElementById('imageBtn');
+    const imageInput = document.getElementById('imageInput');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const settingsModal = document.getElementById('settingsModal');
+    const settingsAvatarPreview = document.getElementById('settingsAvatarPreview');
+    const settingsAvatarBtn = document.getElementById('settingsAvatarBtn');
+    const settingsAvatarInput = document.getElementById('settingsAvatarInput');
+    const settingsNameInput = document.getElementById('settingsNameInput');
+    const settingsBirthdayInput = document.getElementById('settingsBirthdayInput');
+    const settingsCancelBtn = document.getElementById('settingsCancelBtn');
+    const settingsSaveBtn = document.getElementById('settingsSaveBtn');
+    const crisisWidget = document.getElementById('crisisWidget');
+    const crisisBubble = document.getElementById('crisisBubble');
+    const crisisCloseBtn = document.getElementById('crisisCloseBtn');
+    const resetMoodBtn = document.getElementById('resetMoodBtn');
+    const moodSummary = document.getElementById('moodSummary');
+    const moodCountAnxiety = document.getElementById('moodCountAnxiety');
+    const moodCountSadness = document.getElementById('moodCountSadness');
+    const moodCountAnger = document.getElementById('moodCountAnger');
+    const moodCountNormal = document.getElementById('moodCountNormal');
+    const moodBarAnxiety = document.getElementById('moodBarAnxiety');
+    const moodBarSadness = document.getElementById('moodBarSadness');
+    const moodBarAnger = document.getElementById('moodBarAnger');
+    const moodBarNormal = document.getElementById('moodBarNormal');
+    const moodMainEmoji = document.getElementById('moodMainEmoji');
+    const moodMainValue = document.getElementById('moodMainValue');
+    const moodSegmentAnxiety = document.getElementById('moodSegmentAnxiety');
+    const moodSegmentSadness = document.getElementById('moodSegmentSadness');
+    const moodSegmentAnger = document.getElementById('moodSegmentAnger');
+    const moodSegmentNormal = document.getElementById('moodSegmentNormal');
+
+    let introPlaying = false;
+    let introId = 0;
+
+    let currentCharacter = {
+      name: '春野 咲良',
+      season: '春之櫻 -「對你微笑、溫暖、溫柔」',
+      desc: '溫柔、細膩，擅長陪伴與安慰。',
+      icon: 'AIChatbot_IG/C1_sakura.jpeg',
+      chatIcon: 'AIChatbot_IG/C2_sakura.jpeg'
+    };
+
+    const USER_ID = 'default_user';
+    const USER_PROFILE_KEY = 'aiChatbot:userProfile';
+    const SELECTED_CHARACTER_KEY = 'aiChatbot:selectedCharacter';
+
+    let userProfile = loadUserProfile();
+    let editingAvatarData = userProfile.avatar || '';
+
+    const MOOD_TYPES = {
+      anxiety: {
+        label: '焦慮',
+        emoji: '😟',
+        color: '#d69b52',
+        keywords: ['焦慮', '緊張', '不安', '害怕', '擔心', '壓力', '慌', '怕', '煩躁']
+      },
+      sadness: {
+        label: '低落',
+        emoji: '🌧',
+        color: '#7c9bb8',
+        keywords: ['難過', '傷心', '低落', '失落', '憂鬱', '哭', '孤單', '寂寞', '累', '無助', '絕望']
+      },
+      anger: {
+        label: '生氣',
+        emoji: '🔥',
+        color: '#c96f5b',
+        keywords: ['生氣', '氣死', '討厭', '火大', '憤怒', '不爽', '煩死', '崩潰']
+      },
+      normal: {
+        label: '開心／幸福',
+        emoji: '😊',
+        color: '#83a878',
+        keywords: ['開心', '高興', '幸福', '幸運', '快樂', '很棒', '太好了', '期待', '安心', '感謝', '很喜歡', '好喜歡', '最喜歡', '超喜歡', '真的喜歡']
+      }
+    };
+
+    const NEGATIVE_PREFIX_WORDS = [
+      '不', '不太', '沒有', '沒', '並不', '不是', '不怎麼', '不夠', '不算'
+    ];
+
+    const CRISIS_KEYWORDS = [
+      '想死', '不想活', '自殺', '輕生', '傷害自己', '自殘',
+      '結束生命', '活不下去', '想消失', '不想存在',
+      '去死', '死掉算了', '撐不下去'
+    ];
+
+    const PHOTO_BASE_PATH = 'AIChatbot_Photo';
+
+    const NEGATIVE_PHOTO_KEYWORDS = [
+      '難過', '傷心', '低落', '失落', '壓力', '焦慮', '哭', '累',
+      '煩', '害怕', '不安', '痛苦', '孤單', '寂寞', '憂鬱', '崩潰', '無助'
+    ];
+
+    const CHARACTER_PHOTO_RULES = {
+      '春野 咲良': [
+        {
+          file: '1_sakura/1_cake.jpeg',
+          keywords: ['蛋糕']
+        },
+        {
+          file: '1_sakura/1_skmc.jpeg',
+          keywords: ['櫻餅']
+        },
+        {
+          file: '1_sakura/1_chocolate.jpeg',
+          keywords: ['巧克力', '做巧克力']
+        },
+        {
+          file: '1_sakura/1_donko.jpeg',
+          keywords: ['糰子', '團子']
+        },
+        {
+          file: '1_sakura/1_sk.jpeg',
+          keywords: ['櫻花', '櫻']
+        },
+        {
+          file: '1_sakura/1_hug.jpeg',
+          keywords: ['抱抱', '抱抱你']
+        },
+        {
+          file: '1_sakura/1_talk.jpeg',
+          keywords: ['說說', '說出來']
+        }
+      ],
+      '夏川 陽毬': [
+        {
+          file: '2_himari/2_photo_umi.jpeg',
+          keywords: ['海']
+        },
+        {
+          file: '2_himari/2_hug.jpeg',
+          keywords: ['抱抱']
+        },
+        {
+          file: '2_himari/2_pai.jpeg',
+          keywords: ['拍拍','拍肩','肩膀']
+        },
+        {
+          file: '2_himari/2_ice.jpeg',
+          keywords: ['冰', '刨冰', '吃冰']
+        },
+        {
+          file: '2_himari/2_photo_night.jpeg',
+          keywords: ['拍照', '攝影', '夜景']
+        },
+        {
+          file: '2_himari/2_photo_train.jpeg',
+          keywords: ['分享照片', '照片給你', '拍到的照片', '給你看照片']
+        },
+        {
+          file: '2_himari/2_photo_tree.jpeg',
+          keywords: ['喜歡的照片', '風景', '樹', '天空']
+        },
+        {
+          file: '2_himari/2_watermelon.jpeg',
+          keywords: ['西瓜']
+        },
+        {
+          file: '2_himari/2_hf.jpeg',
+          keywords: ['向日葵', '葵花']
+        }
+      ],
+      '秋山 椛': [
+        {
+          file: '3_momiji/3_book.jpeg',
+          keywords: ['看書', '書', '小說', '閱讀']
+        },
+        {
+          file: '3_momiji/3_fish.jpeg',
+          keywords: ['秋刀魚', '魚']
+        },
+        {
+          file: '3_momiji/3_maple.jpeg',
+          keywords: ['楓葉', '楓', '紅葉']
+        },
+        {
+          file: '3_momiji/3_pot.jpeg',
+          keywords: ['火鍋', '鍋']
+        },
+        {
+          file: '3_momiji/3_sweetpotato.jpeg',
+          keywords: ['地瓜', '烤地瓜']
+        },
+        {
+          file: '3_momiji/3_.jpeg',
+          keywords: ['辛苦你了','慢慢來','整理情緒']
+        },
+        {
+          file: '3_momiji/3_z.jpeg',
+          keywords: ['了解自己', '對自己有信心']
+        }
+      ],
+      '冬月 椿': [
+        {
+          file: '4_tsubaki/4_ramei_1.jpeg',
+          keywords: ['拉麵']
+        },
+        {
+          file: '4_tsubaki/4_dog_1.jpeg',
+          keywords: ['喜歡狗狗']
+        },
+        {
+          file: '4_tsubaki/4_dog_2.jpeg',
+          keywords: ['分享狗狗','分享狗狗照片']
+        },
+        {
+          file: '4_tsubaki/4_dw.jpeg',
+          keywords: ['分享畫圖','我畫的']
+        },
+        {
+          file: '4_tsubaki/4_ramei_2.jpeg',
+          keywords: ['喜歡吃拉麵']
+        },
+        {
+          file: '4_tsubaki/4_ramei_3.jpeg',
+          keywords: ['分享', '拉麵給你看']
+        },
+        {
+          file: '4_tsubaki/4_strawberry.jpeg',
+          keywords: ['草莓']
+        },
+        {
+          file: '4_tsubaki/4_snow.jpeg',
+          keywords: ['雪', '下雪', '雪景']
+        },
+        {
+          file: '4_tsubaki/4_hug.jpeg',
+          keywords: ['抱抱你','抱住']
+        },
+        {
+          file: '4_tsubaki/4_back.jpeg',
+          keywords: ['靠在你身旁','陪著你']
+        },
+      ]
+    };
+
+    const CHARACTER_THEMES = {
+      '春野 咲良': 'theme-spring',
+      '夏川 陽毬': 'theme-summer',
+      '秋山 椛': 'theme-autumn',
+      '冬月 椿': 'theme-winter'
+    };
+
+    const introMessages = {
+      '春野 咲良': [
+        '你好，我是春野咲良。',
+        '你看起來有些事情想說呢，不介意的話說出來吧，我會聽的。'
+      ],
+      '夏川 陽毬': [
+        '呀齁～我是夏川陽毬！叫我小毬就可以了！',
+        '咦？！你嚇一跳嗎？！抱歉抱歉。',
+        '不過今天的天氣真好呢！不妨和我分享你的事情？我想更加認識你！'
+      ],
+      '秋山 椛': [
+        '秋山椛是我的名字。',
+        '你看起來有些事情想說，或許你可以嘗試說出來，我會陪你一起慢慢整理情緒。'
+      ],
+      '冬月 椿': [
+        '……冬月椿。',
+        '（沉默）',
+        '……',
+        '我沒有生氣，只是感覺你想要安靜地待著，我會陪在你身邊的。'
+      ]
+    };
+
+    const introDelay = {
+      '春野 咲良': 1000,
+      '夏川 陽毬': 500,
+      '秋山 椛': 1500,
+      '冬月 椿': 2000
+    };
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function loadUserProfile() {
+      try {
+        const profile = JSON.parse(localStorage.getItem(USER_PROFILE_KEY) || '{}');
+        return {
+          name: profile.name || '你',
+          avatar: profile.avatar || '',
+          birthday: profile.birthday || ''
+        };
+      } catch (error) {
+        console.error('讀取使用者資料失敗：', error);
+        return {
+          name: '你',
+          avatar: '',
+          birthday: ''
+        };
+      }
+    }
+
+    function getUserDisplayName() {
+      return userProfile.name || '你';
+    }
+
+    function renderSettingsAvatarPreview() {
+      settingsAvatarPreview.innerHTML = '';
+
+      if (editingAvatarData) {
+        const img = document.createElement('img');
+        img.src = editingAvatarData;
+        img.alt = '使用者頭貼';
+        settingsAvatarPreview.appendChild(img);
+      } else {
+        settingsAvatarPreview.textContent = (settingsNameInput.value.trim() || getUserDisplayName()).slice(0, 1);
+      }
+    }
+
+    function openSettingsModal() {
+      userProfile = loadUserProfile();
+      editingAvatarData = userProfile.avatar || '';
+      settingsNameInput.value = userProfile.name === '你' ? '' : userProfile.name;
+      settingsBirthdayInput.value = userProfile.birthday || '';
+      renderSettingsAvatarPreview();
+      settingsModal.classList.add('open');
+      settingsNameInput.focus();
+    }
+
+    function closeSettingsModal() {
+      settingsModal.classList.remove('open');
+      settingsAvatarInput.value = '';
+    }
+
+    function saveSettingsProfile() {
+      const name = settingsNameInput.value.trim() || '你';
+      const birthday = settingsBirthdayInput.value || '';
+
+      userProfile = {
+        name,
+        avatar: editingAvatarData || '',
+        birthday
+      };
+
+      localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(userProfile));
+      closeSettingsModal();
+      renderChatHistory();
+      addSystemNote('個人帳戶已更新。');
+    }
+
+    function detectCrisis(text) {
+      return CRISIS_KEYWORDS.some(keyword => text.includes(keyword));
+    }
+
+    function showCrisisWidget() {
+      crisisWidget.classList.add('show', 'open');
+    }
+
+    function closeCrisisWidget() {
+      crisisWidget.classList.remove('open');
+    }
+
+    function findCharacterPhoto(userText, aiText) {
+      const rules = CHARACTER_PHOTO_RULES[currentCharacter.name] || [];
+      const combinedText = `${userText}\n${aiText}`;
+
+      const matchedRule = rules.find(rule => {
+        return rule.keywords.some(keyword => combinedText.includes(keyword));
+      });
+
+      if (!matchedRule) return null;
+
+      return `${PHOTO_BASE_PATH}/${matchedRule.file}`;
+    }
+
+    function maybeShareCharacterPhoto(userText, aiText) {
+      const photoPath = findCharacterPhoto(userText, aiText);
+      if (!photoPath) return;
+
+      if (hasSharedPhoto(photoPath)) return;
+
+      addSystemNote(`${currentCharacter.name} 分享了一張照片。`);
+      addImageMessage(photoPath, 'bot');
+    }
+
+    function hasSharedPhoto(photoPath) {
+      const history = loadChatHistory();
+
+      return history.some(item => {
+        return item.kind === 'image'
+          && item.type === 'bot'
+          && item.src === photoPath;
+      });
+    }
+
+    function openSidebar() {
+      sidebar.classList.add('open');
+      drawerBackdrop.classList.add('open');
+    }
+
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      drawerBackdrop.classList.remove('open');
+    }
+
+    function getHistoryKey(characterName = currentCharacter.name) {
+      return `aiChatbot:history:${USER_ID}:${characterName}`;
+    }
+
+    function getTodayKey() {
+      const today = new Date().toISOString().slice(0, 10);
+      return `aiChatbot:mood:${USER_ID}:${today}`;
+    }
+
+    function loadMoodRecord() {
+      try {
+        return JSON.parse(localStorage.getItem(getTodayKey()) || 'null') || {
+          anxiety: 0,
+          sadness: 0,
+          anger: 0,
+          normal: 0,
+          total: 0,
+          lastMood: ''
+        };
+      } catch (error) {
+        console.error('讀取今日心情紀錄失敗：', error);
+        return {
+          anxiety: 0,
+          sadness: 0,
+          anger: 0,
+          normal: 0,
+          total: 0,
+          lastMood: ''
+        };
+      }
+    }
+
+    function saveMoodRecord(record) {
+      localStorage.setItem(getTodayKey(), JSON.stringify(record));
+    }
+
+    function detectMood(text) {
+      const scores = {
+        anxiety: 0,
+        sadness: 0,
+        anger: 0,
+        normal: 0
+      };
+
+      ['anxiety', 'sadness', 'anger'].forEach(mood => {
+        const info = MOOD_TYPES[mood];
+
+        info.keywords.forEach(keyword => {
+          if (text.includes(keyword)) {
+            scores[mood] += 1;
+          }
+        });
+      });
+
+      MOOD_TYPES.normal.keywords.forEach(keyword => {
+        if (hasPositiveKeyword(text, keyword)) {
+          scores.normal += 1;
+        }
+      });
+
+      const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+      const [topMood, topScore] = sorted[0];
+
+      return topScore > 0 ? topMood : null;
+    }
+
+    function hasPositiveKeyword(text, keyword) {
+      let index = text.indexOf(keyword);
+
+      while (index !== -1) {
+        const beforeText = text.slice(Math.max(0, index - 4), index);
+        const hasNegativePrefix = NEGATIVE_PREFIX_WORDS.some(prefix => beforeText.endsWith(prefix));
+
+        if (!hasNegativePrefix) {
+          return true;
+        }
+
+        index = text.indexOf(keyword, index + keyword.length);
+      }
+
+      return false;
+    }
+
+    function recordMoodFromText(text) {
+      const mood = detectMood(text);
+      if (!mood) return null;
+
+      const record = loadMoodRecord();
+
+      record[mood] += 1;
+      record.total += 1;
+      record.lastMood = mood;
+
+      saveMoodRecord(record);
+      updateMoodPanel();
+
+      return mood;
+    }
+
+    function updateMoodPanel() {
+      const record = loadMoodRecord();
+      const total = Math.max(record.total, 1);
+
+      const moodMap = {
+        anxiety: {
+          count: moodCountAnxiety,
+          bar: moodBarAnxiety,
+          segment: moodSegmentAnxiety
+        },
+        sadness: {
+          count: moodCountSadness,
+          bar: moodBarSadness,
+          segment: moodSegmentSadness
+        },
+        anger: {
+          count: moodCountAnger,
+          bar: moodBarAnger,
+          segment: moodSegmentAnger
+        },
+        normal: {
+          count: moodCountNormal,
+          bar: moodBarNormal,
+          segment: moodSegmentNormal
+        }
+      };
+
+      Object.entries(moodMap).forEach(([mood, element]) => {
+        const count = record[mood] || 0;
+        const percent = record.total === 0 ? 0 : Math.round((count / total) * 100);
+        element.count.textContent = count;
+        element.bar.style.width = `${percent}%`;
+        element.bar.style.background = MOOD_TYPES[mood].color;
+        element.segment.style.width = `${percent}%`;
+        element.segment.style.background = MOOD_TYPES[mood].color;
+      });
+
+      if (!record.total) {
+        moodMainEmoji.textContent = '☁️';
+        moodMainValue.textContent = '尚未紀錄';
+        moodSummary.textContent = '今天還沒有紀錄，開始聊天後會自動統計。';
+        return;
+      }
+
+      const mainMood = ['anxiety', 'sadness', 'anger', 'normal']
+        .sort((a, b) => (record[b] || 0) - (record[a] || 0))[0];
+      const mainInfo = MOOD_TYPES[mainMood];
+      const lastInfo = MOOD_TYPES[record.lastMood] || mainInfo;
+      const summaryText = getMoodSummaryText(mainMood, record);
+
+      moodMainEmoji.textContent = mainInfo.emoji;
+      moodMainValue.textContent = mainInfo.label;
+
+      moodSummary.innerHTML = `
+        <strong>總結：</strong>${summaryText}<br>
+        已記錄 ${record.total} 則心情訊息，最近一次是 ${lastInfo.emoji} ${lastInfo.label}。
+      `;
+    }
+
+    function getMoodSummaryText(mainMood, record) {
+      if (mainMood === 'normal') {
+        return '今天的心情偏明亮，出現較多開心或幸福的感受。';
+      }
+
+      if (mainMood === 'sadness') {
+        return '今天的心情有些低落，適合慢下來，好好接住自己的感受。';
+      }
+
+      if (mainMood === 'anxiety') {
+        return '今天似乎比較容易焦慮或緊繃，可以先把事情一件一件整理。';
+      }
+
+      if (mainMood === 'anger') {
+        return '今天有比較多煩躁或生氣的感覺，先讓情緒有地方被看見。';
+      }
+
+      return '今天的心情正在慢慢累積紀錄中。';
+    }
+
+    function loadChatHistory() {
+      try {
+        return JSON.parse(localStorage.getItem(getHistoryKey()) || '[]');
+      } catch (error) {
+        console.error('讀取聊天紀錄失敗：', error);
+        return [];
+      }
+    }
+
+    function saveChatHistory(history) {
+      try {
+        localStorage.setItem(getHistoryKey(), JSON.stringify(history.slice(-80)));
+      } catch (error) {
+        console.error('儲存聊天紀錄失敗：', error);
+        alert('圖片或聊天紀錄太多，瀏覽器暫存空間可能滿了。可以先清除部分對話。');
+      }
+    }
+
+    function saveMessageToHistory(item) {
+      const history = loadChatHistory();
+      history.push({
+        ...item,
+        character: currentCharacter.name,
+        chatIcon: currentCharacter.chatIcon,
+        time: new Date().toISOString()
+      });
+      saveChatHistory(history);
+    }
+
+    function renderChatHistory() {
+      messageList.innerHTML = '';
+
+      const history = loadChatHistory();
+
+      if (history.length === 0) {
+        playIntro();
+        return;
+      }
+
+      history.forEach(item => {
+        if (item.kind === 'image') {
+          addImageMessage(item.src, item.type, false);
+        } else {
+          addMessage(item.text, item.type, false);
+        }
+      });
+
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function clearCurrentChatHistory() {
+      const ok = confirm(`確定要清除「${currentCharacter.name}」的聊天紀錄嗎？`);
+      if (!ok) return;
+
+      localStorage.removeItem(getHistoryKey());
+      messageList.innerHTML = '';
+      playIntro();
+    }
+
+    async function callBackend(userMessage) {
+      const response = await fetch("http://127.0.0.1:5000/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          character: currentCharacter.name,
+          user_id: USER_ID,
+          user_name: getUserDisplayName(),
+          user_birthday: userProfile.birthday || ''
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Flask 後端錯誤");
+      }
+
+      return data.reply;
+    }
+
+    function createBotAvatar() {
+      const wrap = document.createElement('div');
+      wrap.className = 'chat-avatar-wrap';
+
+      const img = document.createElement('img');
+      img.className = 'chat-avatar';
+      img.src = currentCharacter.chatIcon;
+      img.alt = currentCharacter.name;
+
+      wrap.appendChild(img);
+      return wrap;
+    }
+
+    function createMessageRow(type) {
+      const row = document.createElement('div');
+      row.className = `message-row ${type}-row`;
+
+      if (type === 'bot') {
+        row.appendChild(createBotAvatar());
+      }
+
+      if (type === 'user') {
+        const avatar = document.createElement('div');
+        avatar.className = 'user-avatar';
+
+        if (userProfile.avatar) {
+          const img = document.createElement('img');
+          img.src = userProfile.avatar;
+          img.alt = getUserDisplayName();
+          avatar.appendChild(img);
+        } else {
+          avatar.textContent = getUserDisplayName().slice(0, 1);
+        }
+
+        row.appendChild(avatar);
+      }
+
+      return row;
+    }
+
+    function addMessage(text, type, shouldSave = true) {
+      const row = createMessageRow(type);
+
+      const wrap = document.createElement('div');
+      wrap.className = 'bubble-wrap';
+
+      const name = document.createElement('div');
+      name.className = 'speaker-name';
+      name.textContent = type === 'bot' ? currentCharacter.name : getUserDisplayName();
+
+      const bubble = document.createElement('div');
+      bubble.className = `message ${type}`;
+      bubble.textContent = text;
+
+      wrap.appendChild(name);
+      wrap.appendChild(bubble);
+      row.appendChild(wrap);
+
+      messageList.appendChild(row);
+      messages.scrollTop = messages.scrollHeight;
+
+      if (shouldSave) {
+        saveMessageToHistory({
+          kind: 'text',
+          type,
+          text
+        });
+      }
+
+      return row;
+    }
+
+    function addTypingMessage() {
+      const row = createMessageRow('bot');
+
+      const wrap = document.createElement('div');
+      wrap.className = 'bubble-wrap';
+
+      const name = document.createElement('div');
+      name.className = 'speaker-name';
+      name.textContent = currentCharacter.name;
+
+      const bubble = document.createElement('div');
+      bubble.className = 'message bot';
+      bubble.innerHTML = '<span class="typing"><span></span><span></span><span></span></span>';
+
+      wrap.appendChild(name);
+      wrap.appendChild(bubble);
+      row.appendChild(wrap);
+
+      messageList.appendChild(row);
+      messages.scrollTop = messages.scrollHeight;
+
+      return row;
+    }
+
+    function addSystemNote(text) {
+      const row = document.createElement('div');
+      row.className = 'system-note-row';
+
+      const note = document.createElement('div');
+      note.className = 'system-note';
+      note.textContent = text;
+
+      row.appendChild(note);
+      messageList.appendChild(row);
+      messages.scrollTop = messages.scrollHeight;
+
+      return row;
+    }
+
+    function addImageMessage(src, type = 'user', shouldSave = true) {
+      const row = createMessageRow(type);
+
+      const wrap = document.createElement('div');
+      wrap.className = 'bubble-wrap';
+
+      const name = document.createElement('div');
+      name.className = 'speaker-name';
+      name.textContent = type === 'bot' ? currentCharacter.name : getUserDisplayName();
+
+      const img = document.createElement('img');
+      img.className = 'message-image';
+      img.src = src;
+      img.alt = '分享圖片';
+
+      wrap.appendChild(name);
+      wrap.appendChild(img);
+      row.appendChild(wrap);
+
+      messageList.appendChild(row);
+      messages.scrollTop = messages.scrollHeight;
+
+      if (shouldSave) {
+        saveMessageToHistory({
+          kind: 'image',
+          type,
+          src
+        });
+      }
+    }
+
+    async function playIntro() {
+      introPlaying = true;
+      introId++;
+      const thisIntroId = introId;
+
+      messageList.innerHTML = '';
+
+      const lines = introMessages[currentCharacter.name] || [];
+      const delay = introDelay[currentCharacter.name] || 1000;
+
+      for (const line of lines) {
+        if (thisIntroId !== introId) return;
+
+        addMessage(line, 'bot', false);
+        await sleep(delay);
+      }
+
+      introPlaying = false;
+    }
+
+    function applyCharacterFromCard(card) {
+      cards.forEach(item => item.classList.remove('active'));
+      card.classList.add('active');
+
+      currentCharacter = {
+        name: card.dataset.name,
+        season: card.dataset.season,
+        desc: card.dataset.desc,
+        icon: card.dataset.icon,
+        chatIcon: card.dataset.chatIcon
+      };
+
+      chatName.textContent = currentCharacter.name;
+      chatDesc.textContent = `${currentCharacter.season}｜${currentCharacter.desc}`;
+      currentAvatar.src = currentCharacter.chatIcon;
+      currentAvatar.alt = currentCharacter.name;
+      applyCharacterTheme(currentCharacter.name);
+
+      localStorage.setItem(SELECTED_CHARACTER_KEY, currentCharacter.name);
+    }
+
+    function applyCharacterTheme(characterName) {
+      document.body.classList.remove(
+        'theme-spring',
+        'theme-summer',
+        'theme-autumn',
+        'theme-winter'
+      );
+
+      const themeClass = CHARACTER_THEMES[characterName] || 'theme-spring';
+      document.body.classList.add(themeClass);
+    }
+
+    function restoreSelectedCharacter() {
+      const savedCharacterName = localStorage.getItem(SELECTED_CHARACTER_KEY);
+      const savedCard = [...cards].find(card => card.dataset.name === savedCharacterName);
+      const defaultCard = document.querySelector('.character-card.active') || cards[0];
+
+      applyCharacterFromCard(savedCard || defaultCard);
+    }
+
+    cards.forEach(card => {
+      card.addEventListener('click', () => {
+        introId++;
+        applyCharacterFromCard(card);
+        closeSidebar();
+        renderChatHistory();
+      });
+    });
+
+    chatForm.addEventListener('submit', async event => {
+      event.preventDefault();
+
+      const text = userInput.value.trim();
+      if (!text) return;
+
+      if (detectCrisis(text)) {
+        showCrisisWidget();
+      }
+
+      const detectedMood = recordMoodFromText(text);
+
+      addMessage(text, 'user');
+      if (detectedMood) {
+        addSystemNote(
+          `已記錄今日心情：${MOOD_TYPES[detectedMood].emoji} ${MOOD_TYPES[detectedMood].label}`,
+        );
+      }
+      userInput.value = '';
+
+      const typingRow = addTypingMessage();
+
+      try {
+        const aiReply = await callBackend(text);
+        typingRow.remove();
+        addMessage(aiReply, 'bot');
+        maybeShareCharacterPhoto(text, aiReply);
+      } catch (error) {
+        console.error(error);
+        typingRow.remove();
+        addMessage('抱歉，剛剛連線好像出了點問題。可以再說一次嗎？', 'bot');
+      }
+    });
+
+    imageBtn.addEventListener('click', () => {
+      imageInput.click();
+    });
+
+    imageInput.addEventListener('change', event => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        alert('請選擇圖片檔案。');
+        imageInput.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        addImageMessage(reader.result, 'user');
+        addMessage('我分享了一張圖片。', 'user');
+      };
+      reader.readAsDataURL(file);
+
+      imageInput.value = '';
+    });
+
+    mobileMenuBtn.addEventListener('click', openSidebar);
+    drawerBackdrop.addEventListener('click', closeSidebar);
+    clearChatBtn.addEventListener('click', clearCurrentChatHistory);
+    newChatBtn.addEventListener('click', clearCurrentChatHistory);
+    settingsBtn.addEventListener('click', openSettingsModal);
+    settingsCancelBtn.addEventListener('click', closeSettingsModal);
+    settingsSaveBtn.addEventListener('click', saveSettingsProfile);
+    settingsAvatarBtn.addEventListener('click', () => {
+      settingsAvatarInput.click();
+    });
+    settingsNameInput.addEventListener('input', () => {
+      if (!editingAvatarData) {
+        renderSettingsAvatarPreview();
+      }
+    });
+    settingsAvatarInput.addEventListener('change', event => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        alert('請選擇圖片檔案。');
+        settingsAvatarInput.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        editingAvatarData = reader.result;
+        renderSettingsAvatarPreview();
+      };
+      reader.readAsDataURL(file);
+    });
+    settingsModal.addEventListener('click', event => {
+      if (event.target === settingsModal) {
+        closeSettingsModal();
+      }
+    });
+    crisisBubble.addEventListener('click', () => {
+      crisisWidget.classList.toggle('open');
+    });
+    crisisCloseBtn.addEventListener('click', closeCrisisWidget);
+    resetMoodBtn.addEventListener('click', () => {
+      const ok = confirm('確定要重置今日心情紀錄嗎？');
+      if (!ok) return;
+
+      localStorage.removeItem(getTodayKey());
+      updateMoodPanel();
+    });
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        closeSidebar();
+        closeSettingsModal();
+      }
+
+      if (event.ctrlKey && event.shiftKey && event.key === 'Delete') {
+        clearCurrentChatHistory();
+      }
+    });
+
+    restoreSelectedCharacter();
+    updateMoodPanel();
+    renderChatHistory();
+  </script>
+</body>
+</html>
