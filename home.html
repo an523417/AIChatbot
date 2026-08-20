@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>情緒對話機器人</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+      color: #3f3026;
+      background:
+        radial-gradient(circle at 18% 18%, rgba(255, 220, 196, 0.55), transparent 30%),
+        radial-gradient(circle at 80% 15%, rgba(247, 214, 170, 0.45), transparent 28%),
+        radial-gradient(circle at 50% 92%, rgba(218, 185, 143, 0.25), transparent 34%),
+        linear-gradient(135deg, #fff8ea 0%, #f7ead7 58%, #f3dfc6 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+    }
+
+    .home {
+      width: min(920px, 100%);
+      min-height: min(620px, calc(100vh - 56px));
+      background: rgba(255, 253, 248, 0.82);
+      border: 1px solid #ead7bd;
+      border-radius: 34px;
+      box-shadow: 0 22px 56px rgba(116, 82, 45, 0.16);
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+    }
+
+    .hero {
+      padding: 64px 56px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .badge {
+      width: fit-content;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: #fff2df;
+      border: 1px solid #ead1b2;
+      color: #8a5f31;
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(42px, 6vw, 68px);
+      line-height: 1.08;
+      letter-spacing: 2px;
+      color: #38291f;
+    }
+
+    .subtitle {
+      margin: 22px 0 0;
+      color: #7c6654;
+      font-size: 17px;
+      line-height: 1.9;
+      max-width: 520px;
+    }
+
+    .start-btn,
+    .confirm-btn,
+    .skip-btn,
+    .avatar-btn {
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .start-btn {
+      width: fit-content;
+      margin-top: 34px;
+      padding: 15px 34px;
+      border-radius: 999px;
+      background: #b9814e;
+      color: #fff;
+      font-size: 17px;
+      font-weight: bold;
+      box-shadow: 0 12px 28px rgba(116, 82, 45, 0.18);
+    }
+
+    .preview {
+      background:
+        linear-gradient(180deg, rgba(248, 234, 216, 0.86), rgba(255, 250, 242, 0.78));
+      border-left: 1px solid #ead7bd;
+      padding: 42px 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-card {
+      width: min(330px, 100%);
+      border-radius: 28px;
+      background: #fffaf2;
+      border: 1px solid #ead1b2;
+      box-shadow: 0 16px 38px rgba(116, 82, 45, 0.14);
+      padding: 24px;
+    }
+
+    .preview-title {
+      font-weight: bold;
+      color: #7a5b3f;
+      margin-bottom: 16px;
+    }
+
+    .preview-message {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .preview-avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 1px solid #ead1b2;
+      background: #f0d9bd;
+      flex-shrink: 0;
+    }
+
+    .preview-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .preview-bubble {
+      padding: 12px 15px;
+      border-radius: 18px;
+      border-bottom-left-radius: 6px;
+      background: #fff2df;
+      border: 1px solid #ecd1af;
+      color: #4b3b2f;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .preview-note {
+      color: #8a715b;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .setup-panel {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+      background: rgba(64, 45, 30, 0.28);
+      backdrop-filter: blur(8px);
+      z-index: 10;
+    }
+
+    .setup-panel.open {
+      display: flex;
+    }
+
+    .setup-card {
+      width: min(460px, 100%);
+      background: #fffdf8;
+      border: 1px solid #ead7bd;
+      border-radius: 28px;
+      box-shadow: 0 22px 56px rgba(64, 45, 30, 0.22);
+      padding: 30px;
+    }
+
+    .setup-card h2 {
+      margin: 0 0 8px;
+      font-size: 26px;
+      color: #3f3026;
+    }
+
+    .setup-card p {
+      margin: 0 0 22px;
+      color: #8a715b;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .avatar-preview {
+      width: 92px;
+      height: 92px;
+      border-radius: 50%;
+      margin: 0 auto 14px;
+      background: #d9b98f;
+      color: #fffdf9;
+      display: grid;
+      place-items: center;
+      font-size: 32px;
+      font-weight: bold;
+      overflow: hidden;
+      border: 3px solid #ead1b2;
+      box-shadow: 0 10px 22px rgba(116, 82, 45, 0.12);
+    }
+
+    .avatar-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .avatar-btn {
+      display: block;
+      margin: 0 auto 20px;
+      padding: 9px 16px;
+      border-radius: 999px;
+      background: #fff2df;
+      color: #8a5f31;
+      border: 1px solid #ead1b2;
+      font-weight: bold;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #7a5b3f;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      border: 1px solid #e4c9a6;
+      border-radius: 16px;
+      background: #fffaf2;
+      color: #4b3b2f;
+      outline: none;
+      font-size: 15px;
+      padding: 14px 16px;
+      margin-bottom: 22px;
+    }
+
+    .actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .confirm-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 999px;
+      background: #b9814e;
+      color: #fff;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .skip-btn {
+      width: 100%;
+      padding: 13px;
+      border-radius: 999px;
+      background: transparent;
+      color: #8a715b;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 0;
+      }
+
+      .home {
+        min-height: 100vh;
+        border-radius: 0;
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        padding: 54px 28px 28px;
+      }
+
+      .preview {
+        border-left: none;
+        border-top: 1px solid #ead7bd;
+        padding: 28px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="home">
+    <section class="hero">
+      <div class="badge">Emotion Support Chatbot</div>
+      <h1>AIChat<br>在你想說時聽你說</h1>
+      <p class="subtitle">
+        選擇喜歡的季節角色，讓它陪你整理心情、記錄今日情緒，
+        也可以用你自己的名字與頭貼開始對話。
+      </p>
+      <button class="start-btn" id="startBtn" type="button">開始</button>
+    </section>
+
+    <section class="preview">
+      <div class="preview-card">
+        <div class="preview-title">溫柔陪伴模式</div>
+        <div class="preview-message">
+          <div class="preview-avatar">
+            <img src="AIChatbot_IG/C2_sakura.jpeg" alt="咲良">
+          </div>
+          <div class="preview-bubble">
+            你好呀，如果今天有些心情想說，我會在這裡慢慢聽。
+          </div>
+        </div>
+        <div class="preview-note">
+          系統會保存聊天紀錄、統計今日心情，並讓角色依照你的狀態自然回應。
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <section class="setup-panel" id="setupPanel">
+    <div class="setup-card">
+      <h2>設定你的資料</h2>
+      <p>可以輸入姓名與大頭貼，角色會用你的名字陪你聊天；也可以直接跳過。</p>
+
+      <div class="avatar-preview" id="avatarPreview">你</div>
+      <button class="avatar-btn" id="avatarBtn" type="button">選擇大頭貼</button>
+      <input id="avatarInput" type="file" accept="image/*" hidden>
+
+      <label for="nameInput">你的名字</label>
+      <input id="nameInput" type="text" placeholder="例如：小羽、AZ、你的暱稱" maxlength="20">
+
+      <div class="actions">
+        <button class="confirm-btn" id="confirmBtn" type="button">確定</button>
+        <button class="skip-btn" id="skipBtn" type="button">跳過</button>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const USER_PROFILE_KEY = 'aiChatbot:userProfile';
+    const startBtn = document.getElementById('startBtn');
+    const setupPanel = document.getElementById('setupPanel');
+    const avatarBtn = document.getElementById('avatarBtn');
+    const avatarInput = document.getElementById('avatarInput');
+    const avatarPreview = document.getElementById('avatarPreview');
+    const nameInput = document.getElementById('nameInput');
+    const confirmBtn = document.getElementById('confirmBtn');
+    const skipBtn = document.getElementById('skipBtn');
+
+    let avatarData = '';
+
+    function goChat() {
+      window.location.href = 'AIChatbot.html';
+    }
+
+    function saveProfile() {
+      const name = nameInput.value.trim();
+
+      localStorage.setItem(USER_PROFILE_KEY, JSON.stringify({
+        name: name || '你',
+        avatar: avatarData || ''
+      }));
+
+      goChat();
+    }
+
+    function skipProfile() {
+      localStorage.setItem(USER_PROFILE_KEY, JSON.stringify({
+        name: '你',
+        avatar: ''
+      }));
+
+      goChat();
+    }
+
+    startBtn.addEventListener('click', () => {
+      setupPanel.classList.add('open');
+      nameInput.focus();
+    });
+
+    avatarBtn.addEventListener('click', () => {
+      avatarInput.click();
+    });
+
+    avatarInput.addEventListener('change', event => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        alert('請選擇圖片檔案。');
+        avatarInput.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        avatarData = reader.result;
+        avatarPreview.innerHTML = '';
+
+        const img = document.createElement('img');
+        img.src = avatarData;
+        img.alt = '使用者頭貼';
+        avatarPreview.appendChild(img);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    confirmBtn.addEventListener('click', saveProfile);
+    skipBtn.addEventListener('click', skipProfile);
+
+    nameInput.addEventListener('input', () => {
+      if (avatarData) return;
+      avatarPreview.textContent = nameInput.value.trim().slice(0, 1) || '你';
+    });
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Enter' && setupPanel.classList.contains('open')) {
+        saveProfile();
+      }
+
+      if (event.key === 'Escape') {
+        setupPanel.classList.remove('open');
+      }
+    });
+  </script>
+</body>
+</html>
