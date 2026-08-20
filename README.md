@@ -59,7 +59,7 @@ Version Control
 
 
 ## 系統架構
-可以說明：
+
 使用者 → 前端對話介面 → Flask Backend → 對話處理與角色邏輯 → AI Model / Gemini API → 產生回應 → 回傳只用者介面
 
 ## 專案畫面
